@@ -93,6 +93,27 @@ class MainActivity : AppCompatActivity() {
 
             }
         })
+
+        viewModel.reposLD.observe(this, Observer { repoList ->
+            if (!repoList.isNullOrEmpty()) {
+                val spinnerAdapter = ArrayAdapter(
+                    this@MainActivity,
+                    android.R.layout.simple_spinner_dropdown_item,
+                    repoList
+                )
+                repositoriesSpinner.adapter = spinnerAdapter
+                repositoriesSpinner.isEnabled = true
+            } else {
+                val spinnerAdapter = ArrayAdapter(
+                    this@MainActivity,
+                    android.R.layout.simple_spinner_dropdown_item,
+                    arrayListOf("User no repositories")
+                )
+                repositoriesSpinner.adapter = spinnerAdapter
+                repositoriesSpinner.isEnabled = false
+            }
+        })
+
         viewModel.errorLD.observe(this, Observer { messsage ->
             Toast.makeText(this@MainActivity, messsage, Toast.LENGTH_SHORT).show()
         })
@@ -106,7 +127,8 @@ class MainActivity : AppCompatActivity() {
         val callbackUrl = getString(R.string.callbackUrl)
         val openRepos = Intent(
             Intent.ACTION_VIEW,
-            Uri.parse("$urlOath?client_id=$clientId&scope=repo&redirect_uri=$callbackUrl"))
+            Uri.parse("$urlOath?client_id=$clientId&scope=repo&redirect_uri=$callbackUrl")
+        )
         startActivity(openRepos)
     }
 
@@ -125,6 +147,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onLoadRepos(view: View) {
+        token?.let {
+            viewModel.onLoadRepositories(it)
+        }
 
     }
 

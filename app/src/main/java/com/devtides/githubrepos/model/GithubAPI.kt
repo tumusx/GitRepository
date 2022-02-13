@@ -4,6 +4,7 @@ import io.reactivex.Single
 import retrofit2.http.*
 
 const val apiUrl: String = "https://github.com/login/oauth/access_token"
+const val userRepo: String = "user/repos"
 
 interface GithubAPI {
     @Headers("Accept: application/json")
@@ -14,4 +15,7 @@ interface GithubAPI {
         @Field("client_secret") clientSecret: String,
         @Field("code") code: String
     ): Single<GithubToken>
+
+    @GET("user/repos")
+    fun getAllRepo(): Single<List<GithubRepo>>
 }
