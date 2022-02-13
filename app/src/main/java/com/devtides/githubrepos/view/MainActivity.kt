@@ -6,8 +6,10 @@ import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import com.devtides.githubrepos.R
 import com.devtides.githubrepos.viewmodel.MainViewModel
 import kotlinx.android.synthetic.main.activity_main.*
@@ -19,6 +21,8 @@ import java.nio.file.Paths.get
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    var token: String? = null
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,36 +30,52 @@ class MainActivity : AppCompatActivity() {
 
 
         repositoriesSpinner.isEnabled = false
-        repositoriesSpinner.adapter = ArrayAdapter(this,
+        repositoriesSpinner.adapter = ArrayAdapter(
+            this,
             android.R.layout.simple_spinner_dropdown_item,
-            arrayListOf("No repositories available"))
+            arrayListOf("No repositories available")
+        )
         repositoriesSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {
             }
 
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 // Load PullRequests
             }
         }
 
 
         prsSpinner.isEnabled = false
-        prsSpinner.adapter = ArrayAdapter(this,
+        prsSpinner.adapter = ArrayAdapter(
+            this,
             android.R.layout.simple_spinner_dropdown_item,
-            arrayListOf("Please select repository"))
+            arrayListOf("Please select repository")
+        )
         prsSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {
             }
 
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
             }
         }
 
 
-        commentsSpinner.isEnabled  = false
-        commentsSpinner.adapter = ArrayAdapter(this,
+        commentsSpinner.isEnabled = false
+        commentsSpinner.adapter = ArrayAdapter(
+            this,
             android.R.layout.simple_spinner_dropdown_item,
-            arrayListOf("Please select PR"))
+            arrayListOf("Please semalect PR")
+        )
 
 
         observeViewModel()
@@ -63,27 +83,49 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
 
+        viewModel.tokenLD.observe(this, Observer { token ->
+            if (token.isNotEmpty()) {
+                this.token = token
+                loadReposButton.isEnabled = true
+                Toast.makeText(this@MainActivity, "Sucess Auth", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this@MainActivity, "Failed Auth", Toast.LENGTH_SHORT).show()
+
+            }
+        })
+        viewModel.errorLD.observe(this, Observer { messsage ->
+            Toast.makeText(this@MainActivity, messsage, Toast.LENGTH_SHORT).show()
+        })
+
+
     }
 
-     fun onAuthenticate(view: View) {
-        val urlOath : String = getString(R.string.oauthUrl)
+    fun onAuthenticate(view: View) {
+        val urlOath: String = getString(R.string.oauthUrl)
         val clientId = getString(R.string.clientId)
         val callbackUrl = getString(R.string.callbackUrl)
-        val openRepos = Intent(Intent.ACTION_VIEW,
-        Uri.parse("$urlOath?client_id=$clientId&scope=repo&redirect_uri= $callbackUrl"))
+        val openRepos = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("$urlOath?client_id=$clientId&scope=repo&redirect_uri=$callbackUrl"))
         startActivity(openRepos)
     }
 
-    fun onLoadRepos(view: View) {
+    override fun onResume() {
         super.onResume()
         val uriU: Uri? = intent.data
         val callback: String = getString(R.string.callbackUrl)
-        Thread(Runnable {
-            Thread.sleep(2)
-            if (uriU != null && uriU.toString().startsWith(callback)){
-                val codeUrl: String? = uriU.getQueryParameter("code")
+        if (uriU != null && uriU.toString().startsWith(callback)) {
+            val codeUrl: String? = uriU.getQueryParameter("code")
+            codeUrl?.let {
+                val clientId = getString(R.string.clientId)
+                val clientSecret = getString(R.string.clientSecret)
+                viewModel.configureToken(clientId, clientSecret, codeUrl)
             }
-        }).start()
+        }
+    }
+
+    fun onLoadRepos(view: View) {
+
     }
 
     fun onPostComment(view: View) {
